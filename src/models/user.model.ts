@@ -3,27 +3,19 @@ import { NextFunction } from "express";
 import { TryCatchUtily } from "../utils/tryCatch.utils.js";
 import { generateHashPasswordUtility } from "../utils/generateHashPassword.utils.js";
 import { comparePasswordUtility } from "../utils/comparePassword.utils.js";
+import { UserSchemaType } from "../validators/user.validation.js";
 
-export interface IUser extends Document {
-    firstName: string,
-    lastName: string,
-    email: string,
-    password: string,
-    username: string,
-    profilePictureUrl: string,
-    refreshToken: string,
-    verificationCode: string,
-    emailVerified: boolean,
+export interface IUser extends UserSchemaType,Document {
     comparePassword(canidatePassword: string):Promise<boolean>
 }
 
-const UserSchema:Schema = new Schema(
+const UserSchema:Schema = new Schema<IUser>(
     {
         firstName: { type: String, required: true, trim: true },
         lastName: { type: String, required: true, trim: true },
         email: { type: String, required: true, unique: true, lowercase: true },
         password: { type: String, required: true },
-        username: { type: String, required: true, unique: true, lowercase: true },
+        userName: { type: String, required: true, unique: true, lowercase: true },
         profilePictureUrl: { type: String, default: null },
         refreshToken: { type: String },
         verificationCode: {type: String},
