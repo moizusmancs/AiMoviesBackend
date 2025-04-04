@@ -36,8 +36,6 @@ export const handleSignUpUser = TryCatchUtily (async (req,res,next) => {
     await newUser.save();
 
 
-    res.status(201).json({user:newUser, accessToken})
-    
-
+    res.status(201).cookie("refreshToken",refreshToken).json({user:newUser, accessToken})
 
 })

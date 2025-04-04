@@ -20,6 +20,7 @@ const UserSchema:Schema = new Schema<IUser>(
         refreshToken: { type: String },
         verificationCode: {type: String},
         emailVerified: {type: Boolean, default: false},
+        ttlVerificationCode: {type:Date, default: new Date(Date.now() + 15*60*1000)}
     },
     {
         timestamps: true

@@ -9,7 +9,8 @@ export const zodUserSchema = z.object({
     profilePictureUrl: z.string().url().optional(),
     refreshToken: z.string().optional(),
     verificationCode: z.string().optional(),
-    emailVerified: z.boolean().default(false)
+    emailVerified: z.boolean().default(false),
+    ttlVerificationCode: z.date().default(new Date(Date.now() + 15*60*1000))
     
 })
 
