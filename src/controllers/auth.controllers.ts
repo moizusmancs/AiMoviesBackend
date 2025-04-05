@@ -5,6 +5,7 @@ import { IUser, User } from "../models/user.model.js";
 import { generateHashPasswordUtility } from "../utils/generateHashPassword.utils.js";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateTokens.utils.js";
 import { generateVerificationCodeUtility } from "../utils/generateVerificationCode.utils.js";
+import { sendVerificationEmail } from "../utils/sendVerificationCodeEmail.js";
 
 export const handleSignUpUser = TryCatchUtily (async (req,res,next) => {
     
@@ -34,6 +35,7 @@ export const handleSignUpUser = TryCatchUtily (async (req,res,next) => {
 
     newUser.refreshToken = refreshToken;
     await newUser.save();
+    await sendVerificationEmail(email, verificationCode);
 
 
     res.status(201).cookie("refreshToken",refreshToken).json({user:newUser, accessToken})
