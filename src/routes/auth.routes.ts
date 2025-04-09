@@ -1,9 +1,10 @@
 import express from "express"
-import { handleSignUpUser } from "../controllers/auth.controllers.js";
+import { handleSignUpUser, handleTest } from "../controllers/auth.controllers.js";
 import { validateSignupDataMiddleware } from "../middlewares/signupValidation.middleware.js";
 
 const router = express.Router();
 
 router.post("/signup",validateSignupDataMiddleware, handleSignUpUser)
+router.get("/test", handleTest)
 
 export {router as authRouter}

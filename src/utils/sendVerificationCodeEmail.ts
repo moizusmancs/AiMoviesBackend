@@ -1,5 +1,5 @@
 import { transporter } from "../config/nodemailer.config.js";
-import { customNextError } from "./customNextError.utils.js";
+import { ApiError } from "./customNextError.utils.js";
 
 
 export const sendVerificationEmail = async (toEmail: string, code: Number):Promise<boolean> => {
@@ -16,11 +16,9 @@ export const sendVerificationEmail = async (toEmail: string, code: Number):Promi
         return true;
         
       } catch (error) {
-       throw new customNextError(error.message, 500) 
+       throw new ApiError(error.message, 500) 
       }
 
-      
-    
 }
 
 

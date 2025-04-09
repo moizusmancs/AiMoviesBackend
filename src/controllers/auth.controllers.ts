@@ -1,11 +1,12 @@
 import { ZodError } from "zod";
-import { customNextError } from "../utils/customNextError.utils.js";
+import { ApiError } from "../utils/customNextError.utils.js";
 import { TryCatchUtily } from "../utils/tryCatch.utils.js";
 import { IUser, User } from "../models/user.model.js";
 import { generateHashPasswordUtility } from "../utils/generateHashPassword.utils.js";
-import { generateAccessToken, generateRefreshToken } from "../utils/generateTokens.utils.js";
+import { generateAccessToken, generateRefreshToken, verifyAccessToken } from "../utils/generateTokens.utils.js";
 import { generateVerificationCodeUtility } from "../utils/generateVerificationCode.utils.js";
 import { sendVerificationEmail } from "../utils/sendVerificationCodeEmail.js";
+import { CookieOptions } from "express";
 
 export const handleSignUpUser = TryCatchUtily (async (req,res,next) => {
     
@@ -14,7 +15,7 @@ export const handleSignUpUser = TryCatchUtily (async (req,res,next) => {
     const userAlreadyExists = await User.findOne({email,userName});
 
     if(userAlreadyExists){
-        throw new customNextError("An account with this email/username already exists, please login", 400);
+        throw new ApiError("An account with this email/username already exists, please login", 400);
     }
 
     const hashedPassword = await generateHashPasswordUtility(password);
@@ -34,10 +35,79 @@ export const handleSignUpUser = TryCatchUtily (async (req,res,next) => {
     const refreshToken = generateRefreshToken(newUser._id as string);
 
     newUser.refreshToken = refreshToken;
+
     await newUser.save();
-    await sendVerificationEmail(email, verificationCode);
+    newUser.password = undefined;
+
+    // await sendVerificationEmail(email, verificationCode);
+
+    res
+        .setHeader("Authorization",`Bearer ${accessToken}`)
+        .status(201)
+        .cookie("refreshToken",refreshToken)
+        .json({
+            success: true,
+            message: "user created successfully and email verification code sent",
+            user:newUser
+        })
+})
+
+export const handleLoginUser = TryCatchUtily(async (req, res, next) => {
+
+    const { username, email, password } = req.body;
+
+    if(!username || !password || !email){
+        throw new ApiError("username/email and password must be provided",400)
+    }
+
+    const userAlreadyExists = await User.findOne({email,username});
+
+    if(!userAlreadyExists){
+        throw new ApiError("no user exists with above credentials, please signup",400)
+    }
+
+    const isPasswordValid = await userAlreadyExists.comparePassword(password);
+
+    if(!isPasswordValid){
+        throw new ApiError("invalid password",401)
+    }
+
+    const accessToken = generateAccessToken(userAlreadyExists._id as string);
+    const refreshToken = generateRefreshToken(userAlreadyExists._id as string);
+
+    userAlreadyExists.refreshToken = refreshToken;
+    await userAlreadyExists.save();
 
 
-    res.status(201).cookie("refreshToken",refreshToken).json({user:newUser, accessToken})
+    const loggedInUser = await User.findById(userAlreadyExists._id as string).select(" -password -refreshToken")
+
+    const options:CookieOptions = {
+        httpOnly: true,
+        secure:true,
+        sameSite:"lax"
+    }
+
+    res
+    .setHeader("Authorization",`Bearer ${accessToken}`)
+    .status(200)
+    .cookie("refreshToken",refreshToken, options)
+    .json({
+        success: true,
+        message: "user logged in successfully",
+        user: loggedInUser
+    })
 
 })
+
+export const handleTest = TryCatchUtily(async(req,res,next) => {
+
+    const authHeaders = req.headers.authorization;
+    const token = authHeaders.split(" ")[1];
+    const validToken = verifyAccessToken(token);
+
+    res.json({
+        success: true,
+        validToken
+    })
+})
+
