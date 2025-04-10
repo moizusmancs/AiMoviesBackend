@@ -26,3 +26,24 @@ export const verifyAccessToken = (token: string):string => {
         }   
     }
 }
+
+export const verifyRefreshToken = (token:string):string => {
+    try {
+        const decoded:TokenPayloadInterface = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET) as TokenPayloadInterface;
+        return decoded.userId;
+    } catch (error) {
+        
+        if(error instanceof jwt.TokenExpiredError){
+            throw new ApiError("Session expired please login again", 401);
+        }
+
+        else if (error instanceof jwt.JsonWebTokenError){
+            throw new ApiError("Invalid Token, Please Login Again", 401)
+        }
+        
+        else{
+            throw new ApiError(error.message, 401);
+
+        }
+    }
+}

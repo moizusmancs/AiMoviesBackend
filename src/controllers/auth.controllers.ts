@@ -3,7 +3,7 @@ import { ApiError } from "../utils/customNextError.utils.js";
 import { TryCatchUtily } from "../utils/tryCatch.utils.js";
 import { IUser, User } from "../models/user.model.js";
 import { generateHashPasswordUtility } from "../utils/generateHashPassword.utils.js";
-import { generateAccessToken, generateRefreshToken, verifyAccessToken } from "../utils/generateTokens.utils.js";
+import { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken } from "../utils/generateTokens.utils.js";
 import { generateVerificationCodeUtility } from "../utils/generateVerificationCode.utils.js";
 import { sendVerificationEmail } from "../utils/sendVerificationCodeEmail.js";
 import { CookieOptions } from "express";
@@ -109,5 +109,46 @@ export const handleTest = TryCatchUtily(async(req,res,next) => {
         success: true,
         validToken
     })
+})
+
+
+export const handleRefreshToken = TryCatchUtily(async (req, res, next) => {
+    
+
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if(!incomingRefreshToken){
+        throw new ApiError("Unauthorized Request", 401);
+    }
+
+    const token = verifyRefreshToken(incomingRefreshToken);
+
+    const user = await User.findById(token as string).select("-password");
+
+    if(!user){
+        throw new ApiError("User not found, invalid refreshtoken",401);
+    }
+
+    const accessToken = generateAccessToken(user._id as string);
+    const refreshToken = generateRefreshToken(user._id as string);
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    const options:CookieOptions = {
+        httpOnly: true,
+        secure:true,
+        sameSite:"lax"
+    }
+
+    res
+    .setHeader("Authorization",`Bearer ${accessToken}`)
+    .status(200)
+    .cookie("refreshToken",refreshToken, options)
+    .json({
+        success: true,
+        message: "Access and Refresh Tokens Refreshed Successfully!",
+    })
+
 })
 
